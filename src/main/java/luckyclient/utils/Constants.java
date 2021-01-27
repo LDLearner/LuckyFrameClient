@@ -31,6 +31,12 @@ public class Constants {
 	 */	
     public static final String JSONPATH_SIGN = "$JP#";
 
+	/**
+	 * 预期结果匹配符---App检查
+	 */
+	public static final String AppScan_SIGN = "xpath=";
+
+
     
 	/************************HTTP 返回结果头域 响应码分隔符定义***************************
 	 * HTTP测试返回结果 是否接收头域

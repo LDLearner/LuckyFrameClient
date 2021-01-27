@@ -1,9 +1,11 @@
 package luckyclient.execution.appium;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import com.offbytwo.jenkins.model.BuildResult;
 
@@ -101,6 +103,7 @@ public class AppTestControl {
 	}
 
 	public static void taskExecutionPlan(TaskExecute task) throws InterruptedException {
+		System.out.println("APP AutoTest Start!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		// 记录日志到数据库
 		String taskId=task.getTaskId().toString();
 		serverOperation.exetype = 0;
@@ -129,8 +132,20 @@ public class AppTestControl {
 			if (BuildResult.SUCCESS.equals(buildResult)) {
 				try {
 					if ("Android".equals(properties.getProperty("platformName"))) {
+//						//LD add安卓录屏开始
+//						try {
+//							Runtime.getRuntime().exec("adb shell \"screenrecord /sdcard/crash/And"+RecFileName+"&echo $! >/sdcard/crash/pid.txt\"");
+//							System.out.println("安卓录屏开始！！！！！！！！！！！！！！！！"+"name="+RecFileName);
+//						} catch (IOException e) {
+//							e.printStackTrace();
+//						}
+
 						androiddriver = AppiumInitialization.setAndroidAppium(properties);
+						//LD add切换到webView用于H5页面自动化执行
+						androiddriver.context("WEBVIEW_com.lwljuyang.mobile.juyang");
+						System.out.println("切换context完成！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！");
 						LogUtil.APP.info("完成AndroidDriver初始化动作...APPIUM Server【http://{}/wd/hub】",properties.getProperty("appiumsever"));
+
 					} else if ("IOS".equals(properties.getProperty("platformName"))) {
 						iosdriver = AppiumInitialization.setIosAppium(properties);
 						LogUtil.APP.info("完成IOSDriver初始化动作...APPIUM Server【http://{}/wd/hub】",properties.getProperty("appiumsever"));
@@ -144,6 +159,16 @@ public class AppTestControl {
 				serverOperation.updateTaskExecuteStatusIng(taskId, cases.size());
 				int i = 0;
 				for (ProjectCase testcase : cases) {
+					SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-ddHH:mm:ss");
+					String dateStr = dateformat.format(System.currentTimeMillis());
+                    String RecFileName=testcase.getCaseName()+System.currentTimeMillis()/1000+".mp4";
+					//LD add安卓录屏开始case
+					try {
+						System.out.println("安卓录屏开始！！！！！！！！！！！！！！！！"+"RecFileName="+RecFileName);
+						Runtime.getRuntime().exec("adb shell \"screenrecord /sdcard/crash/And"+RecFileName+"&echo $! >/sdcard/crash/pid.txt\"").waitFor(20, TimeUnit.SECONDS);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
 					i++;
 					LogUtil.APP.info("开始执行当前测试任务 {} 的第【{}】条测试用例:【{}】......",task.getTaskName(),i,testcase.getCaseSign());
 					List<ProjectCaseSteps> steps = GetServerApi.getStepsbycaseid(testcase.getCaseId());
@@ -154,6 +179,7 @@ public class AppTestControl {
 						//插入开始执行的用例
 						caselog.insertTaskCaseExecute(taskId, taskScheduling.getProjectId(),testcase.getCaseId(),testcase.getCaseSign(), testcase.getCaseName(), 4);
 						if ("Android".equals(properties.getProperty("platformName"))) {
+							System.out.println("***************开始执行安卓用例");
 							AndroidCaseExecution.caseExcution(testcase, steps, taskId, androiddriver, caselog, pcplist);
 						} else if ("IOS".equals(properties.getProperty("platformName"))) {
 							IosCaseExecution.caseExcution(testcase, steps, taskId, iosdriver, caselog, pcplist);
@@ -162,6 +188,17 @@ public class AppTestControl {
 						LogUtil.APP.error("用户执行过程中抛出异常！", e);
 					}
 					LogUtil.APP.info("当前用例：【{}】执行完成......进入下一条",testcase.getCaseSign());
+					//LD add安卓录屏结束case
+					try {
+						Runtime.getRuntime().exec("adb shell kill -SIGINT $(cat /sdcard/crash/pid.txt)").waitFor(10,TimeUnit.SECONDS);
+						Thread.sleep(1000);
+						Runtime.getRuntime().exec("adb pull /sdcard/crash/And"+RecFileName+" E:\\record\\And"+RecFileName).waitFor(10,TimeUnit.SECONDS);
+						System.out.println("安卓录屏结束！！！！！！！！！！！！！！！！"+"RecFileName="+RecFileName);
+					} catch (IOException e) {
+						e.printStackTrace();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 				tastcount = serverOperation.updateTaskExecuteData(taskId, cases.size(),2);
 				String testtime = serverOperation.getTestTime(taskId);
@@ -169,6 +206,7 @@ public class AppTestControl {
 				MailSendInitialization.sendMailInitialization(HtmlMail.htmlSubjectFormat(jobname),
 						HtmlMail.htmlContentFormat(tastcount, taskId, buildResult.toString(), restartstatus, testtime, jobname),
 						taskId, taskScheduling, tastcount,testtime,buildResult.toString(),restartstatus);
+
 				// 关闭APP以及appium会话
 				if ("Android".equals(properties.getProperty("platformName"))) {
 					assert androiddriver != null;

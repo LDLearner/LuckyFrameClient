@@ -203,7 +203,8 @@ public class AndroidEncapsulateOperation {
 			result = "执行JS...【" + operationValue + "】";
 			LogUtil.APP.info("执行JS...【{}】",operationValue);
 			break;
-		case "exAdbShell":
+		case "exadbshell":
+			System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!operationValue="+operationValue);
 			Runtime.getRuntime().exec(operationValue);
 			result = "执行安卓adb命令...【" + operationValue + "】";
 			LogUtil.APP.info("执行安卓adb命令...【{}】",operationValue);		   
@@ -259,6 +260,7 @@ public class AndroidEncapsulateOperation {
 			break;
 		case "swipeup":
 			String[] tempup = operationValue.split("\\|", -1);
+			System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Second="+tempup[0]+";Times="+tempup[1]);
 			if (null != tempup[0] && ChangString.isNumeric(tempup[0])) {
 				Double second = Double.valueOf(tempup[0]);
 				if (null != tempup[1] && ChangString.isNumeric(tempup[1])) {
@@ -433,6 +435,7 @@ public class AndroidEncapsulateOperation {
 			break;
 		case "pressxy":
 			String[] pressxy = operationValue.split("\\|", -1);
+			System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!X="+pressxy[0]+";Y="+pressxy[1]);
 			if (null != pressxy[0] && ChangString.isNumeric(pressxy[0])) {
 				int pressx = Integer.parseInt(pressxy[0]);
 				if (null != pressxy[1] && ChangString.isNumeric(pressxy[1])) {

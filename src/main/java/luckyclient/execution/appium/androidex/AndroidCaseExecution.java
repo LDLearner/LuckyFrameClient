@@ -154,6 +154,7 @@ public class AndroidCaseExecution{
 				if (operation.contains("alert")){
 					result = AndroidEncapsulateOperation.alertOperation(appium, operation);
 				}else{
+					System.out.println("driverOperation run......!!!!!!!!!!!!!"+"operation="+operation+";operationValue="+operationValue);
 					result = AndroidEncapsulateOperation.driverOperation(appium, operation, operationValue);
 				} 				
 			}else{
@@ -264,6 +265,7 @@ public class AndroidCaseExecution{
                 else {
                     // 模糊匹配预期结果模式
                     if (expect.length() > Constants.FUZZY_MATCHING_SIGN.length() && expect.startsWith(Constants.FUZZY_MATCHING_SIGN)) {
+						System.out.println("进入模糊匹配代码！！！！！！！！！！！！！！！！！！！！！！！"+expect.substring(Constants.FUZZY_MATCHING_SIGN.length())+"result="+result+"end!");
                         if (result.contains(expect.substring(Constants.FUZZY_MATCHING_SIGN.length()))) {
                             LogUtil.APP.info("用例：{} 第{}步，模糊匹配预期结果成功！执行结果：{}",testcase.getCaseSign(),step.getStepSerialNumber(),result);
                             caselog.insertTaskCaseLog(taskid, testcase.getCaseId(), "模糊匹配预期结果成功！执行结果：" + result, "info", String.valueOf(step.getStepSerialNumber()), "");
@@ -290,6 +292,23 @@ public class AndroidCaseExecution{
                             caselog.insertTaskCaseLog(taskid, testcase.getCaseId(), "正则匹配预期结果失败！预期结果：" + expect.substring(Constants.REGULAR_MATCHING_SIGN.length()) + "，测试结果：" + result, "error", String.valueOf(step.getStepSerialNumber()), imagname);
                         }
                     }
+					 //LD add AppUI检查验证
+					else if (expect.length() > Constants.AppScan_SIGN.length() && expect.startsWith(Constants.AppScan_SIGN)) {
+							System.out.println("进入AppUI检测代码！！！！！！！！！！！！！！！！！！！！！！！");
+							AndroidElement ae = isElementExist(appium, "xpath", expect.substring(Constants.AppScan_SIGN.length()));
+						if (null != ae) {
+							LogUtil.APP.info("用例：{} 第{}步，在当前页面中找到预期结果中对象。当前步骤执行成功！",testcase.getCaseSign(),step.getStepSerialNumber());
+							caselog.insertTaskCaseLog(taskid, testcase.getCaseId(), "在当前页面中找到预期结果中对象。当前步骤执行成功！", "info", String.valueOf(step.getStepSerialNumber()), "");
+						} else {
+							casenote = "第" + step.getStepSerialNumber() + "步，没有在当前页面中找到预期结果中对象。执行失败！";
+							setresult = 1;
+							AndroidBaseAppium.screenShot(appium, imagname);
+							LogUtil.APP.warn("用例：{} 第{}步，没有在当前页面中找到预期结果中对象。当前步骤执行失败！",testcase.getCaseSign(),step.getStepSerialNumber());
+							caselog.insertTaskCaseLog(taskid, testcase.getCaseId(), "在当前页面中没有找到预期结果中对象。当前步骤执行失败！" + "checkproperty【" + "xpath" + "】  checkproperty_value【" + expect + "】", "error", String.valueOf(step.getStepSerialNumber()), imagname);
+						}
+
+					}
+
                     // 精确匹配预期结果模式
                     else {
                         if (expect.equals(result)) {

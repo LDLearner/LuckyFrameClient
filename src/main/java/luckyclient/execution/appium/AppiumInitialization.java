@@ -59,6 +59,10 @@ public class AppiumInitialization {
 		capabilities.setCapability("noSign", Boolean.valueOf(properties.getProperty("noSign")));
 		// 是否避免重新安装APP
 		capabilities.setCapability("noReset", Boolean.valueOf(properties.getProperty("noReset")));
+
+		// 是否每次自动启动APP
+		capabilities.setCapability("autoLaunch", Boolean.valueOf(properties.getProperty("autoLaunch")));
+
 		// 等待超时没接收到命令关闭appium
 		capabilities.setCapability("newCommandTimeout", properties.getProperty("newCommandTimeout"));
 		String url="http://" + properties.getProperty("appiumsever") + "/wd/hub";
