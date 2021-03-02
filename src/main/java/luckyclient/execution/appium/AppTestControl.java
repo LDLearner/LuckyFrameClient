@@ -1,6 +1,6 @@
 package luckyclient.execution.appium;
 
-import java.io.IOException;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +29,7 @@ import luckyclient.tool.mail.MailSendInitialization;
 import luckyclient.tool.shell.RestartServerInitialization;
 import luckyclient.utils.LogUtil;
 import luckyclient.utils.config.AppiumConfig;
+import sun.font.TrueTypeFont;
 
 /**
  * =================================================================
@@ -101,6 +102,25 @@ public class AppTestControl {
 			iosdriver.closeApp();
 		}
 	}
+	//LD add 字符输出函数
+	private static void printMessage (final InputStream input){
+
+		new Thread(new Runnable() {
+			public void run() {
+				Reader reader = new InputStreamReader(input);
+				BufferedReader bf = new BufferedReader(reader);
+				String line = null;
+				try {
+					while((line=bf.readLine())!=null) {
+						System.out.println(line);
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();
+	}
+
 
 	public static void taskExecutionPlan(TaskExecute task) throws InterruptedException {
 		System.out.println("APP AutoTest Start!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -158,14 +178,37 @@ public class AppTestControl {
 				LogUtil.APP.info("当前计划【{}】中共有【{}】条待测试用例...",task.getTaskName(),cases.size());
 				serverOperation.updateTaskExecuteStatusIng(taskId, cases.size());
 				int i = 0;
+
 				for (ProjectCase testcase : cases) {
 					SimpleDateFormat dateformat = new SimpleDateFormat("yyyy-MM-ddHH:mm:ss");
 					String dateStr = dateformat.format(System.currentTimeMillis());
                     String RecFileName=testcase.getCaseName()+System.currentTimeMillis()/1000+".mp4";
 					//LD add安卓录屏开始case
 					try {
-						System.out.println("安卓录屏开始！！！！！！！！！！！！！！！！"+"RecFileName="+RecFileName);
-						Runtime.getRuntime().exec("adb shell \"screenrecord /sdcard/crash/And"+RecFileName+"&echo $! >/sdcard/crash/pid.txt\"").waitFor(20, TimeUnit.SECONDS);
+						Process p = null;
+						int success=0;
+						do {
+							System.out.println("安卓录屏开始！！！！！！！！！！！！！！！！" + "RecFileName=" + RecFileName);
+							p = Runtime.getRuntime().exec("adb shell \"screenrecord --time-limit 20 --verbose /sdcard/crash/And" + RecFileName + "\"&echo $! >/sdcard/crash/pid.txt\"");
+							//printMessage(p.getInputStream());
+							//printMessage(p.getErrorStream());
+							//Thread.sleep(1000);
+
+							//Runtime.getRuntime().exec("adb shell \"screenrecord --time-limit 10 --verbose /sdcard/crash/And"+RecFileName+"\"&echo $! >/sdcard/crash/pid.txt\"").waitFor(10, TimeUnit.SECONDS);
+							//Runtime.getRuntime().exec("adb shell \"nohup screenrecord --time-limit 10 --verbose /sdcard/crash/And"+RecFileName+"&echo $! >/sdcard/crash/pid.txt\"").waitFor(10, TimeUnit.SECONDS);
+							//Thread.sleep(8000);
+							Reader reader = new InputStreamReader(p.getInputStream());
+							BufferedReader bf = new BufferedReader(reader);
+							String line = null;
+							try {
+								if ((line = bf.readLine()) != null) {
+									success=1;
+									System.out.println(line);
+								}
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}while (success==0);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
@@ -190,10 +233,14 @@ public class AppTestControl {
 					LogUtil.APP.info("当前用例：【{}】执行完成......进入下一条",testcase.getCaseSign());
 					//LD add安卓录屏结束case
 					try {
+						//int value = p.waitFor();
+						//System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!The Value="+value);
+						Thread.sleep(2000);
 						Runtime.getRuntime().exec("adb shell kill -SIGINT $(cat /sdcard/crash/pid.txt)").waitFor(10,TimeUnit.SECONDS);
 						Thread.sleep(1000);
-						Runtime.getRuntime().exec("adb pull /sdcard/crash/And"+RecFileName+" E:\\record\\And"+RecFileName).waitFor(10,TimeUnit.SECONDS);
 						System.out.println("安卓录屏结束！！！！！！！！！！！！！！！！"+"RecFileName="+RecFileName);
+						Runtime.getRuntime().exec("adb pull /sdcard/crash/And"+RecFileName+" E:\\record\\And"+RecFileName).waitFor(10,TimeUnit.SECONDS);
+						//Thread.sleep(10000);
 					} catch (IOException e) {
 						e.printStackTrace();
 					} catch (InterruptedException e) {
